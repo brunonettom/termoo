@@ -114,7 +114,6 @@ class Termoo():
         return "_ " * self.nLetras + "\n"
 
     def colunai(self, chave, iColuna):
-        print(self.lChavesEscolhidasOriginais)
         resultado = f'Palavra {iColuna + 1}\n\n'
         
         # Se a palavra já foi acertada, usar o histórico salvo mais as linhas vazias atualizadas
@@ -151,6 +150,7 @@ class Termoo():
         
         while self.nLinhasFaltantes > 0 and self.lChavesEscolhidas:
             self.nLinhasFaltantes = self.nChutesTotais - len(self.palavrasChutadas)
+            print("CHAVES ESCOLHIDAS",self.lChavesEscolhidasOriginais)
             chute = input("Digite um chute: ").lower()
             
             if len(chute) != self.nLetras:
@@ -177,7 +177,6 @@ class Termoo():
             print(f"Suas vidas acabaram! As palavras eram: {', '.join(self.lChavesEscolhidasOriginais)}")
 
     def fazChaves(self):
-        print(len(self.dicionarioTodo))
         # self.nChutesTotais = int(input("Quantos chutes você quer? "))
         self.nLetras = int(input("Quantas letras você quer por palavra? "))
         self.nPalavras = int(input("Quantas palavras? "))

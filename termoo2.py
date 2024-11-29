@@ -162,7 +162,7 @@ class Termoo():
                 
             self.palavrasChutadas.append(chute)
             print(self.todasAsColunas())
-            print(f"Vidas restantes: {self.nLinhasFaltantes}")
+            print(f"Vidas restantes: {self.nLinhasFaltantes}") 
             
             if chute in self.lChavesEscolhidas:
                 print(f"Parabéns! Você acertou a palavra '{chute}'!")

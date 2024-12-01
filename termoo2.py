@@ -6,6 +6,10 @@ from listaDePalavras3 import listaDePalavras3
 import requests
 import time
 
+from datetime import datetime
+import requests
+from lxml import html
+
 import re
 from lxml import html  
 import csv,os,json
@@ -51,70 +55,110 @@ class Termoo():
         #     del lChavesPossiveis[iDaChaveEscolhida]
         return lChavesEscolhidas
 
-    
-    
     def carrega_palavra_secreta(self):
         url = "http://www.palabrasaleatorias.com/palavras-aleatorias.php?fs=1"
         horario_inicio = datetime.now()
         lChavesEscolhidas = []
-        iteracoes=0
-        frequencia=0
-        temposDeDemora=[]
-        demoras=[]
-        # somaTempo=0
+        iteracoes = 0
+        temposDeDemora = []
+        temposDeIteracao = []
+        palavrasAmericanas=[]
+        demoras = []
+
         for iPalavra in range(self.nPalavras):
             while True:
-                resposta = requests.get(url)
-                elemento = html.fromstring(resposta.content)
-                palavra_secreta = elemento.xpath('//div[@style="font-size:3em; color:#6200C5;"]/text()')[0].strip()
+                iteracoes += 1  # Incrementa o número de iterações
+                # Início da iteração
+                inicio_iteracao = datetime.now()
+                
+                try:
+                    resposta = requests.get(url)
+                    elemento = html.fromstring(resposta.content)
+                    palavra_secreta = elemento.xpath('//div[@style="font-size:3em; color:#6200C5;"]/text()')[0].strip()
+                except Exception as e:
+                    print(f'Erro ao obter a palavra secreta: {e}')
+                    fim_iteracao = datetime.now()
+                    tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
+                    temposDeIteracao.append(tempo_iteracao)
+                    self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
+                    continue  # Tenta novamente em caso de erro
+
                 duracao = datetime.now() - horario_inicio
                 segundos = duracao.total_seconds()
-                # Se a palavra tiver o número correto de letras, adicione à lista
-                if len(palavra_secreta) == self.nLetras and not palavra_secreta in lChavesEscolhidas:
+
+                # Verifica se a palavra é válida
+                if len(palavra_secreta) == self.nLetras and palavra_secreta not in lChavesEscolhidas:
                     if palavra_secreta in self.en:
                         print(f'A PALAVRA {palavra_secreta} É AMERICANA')
+                        palavrasAmericanas.append(palavra_secreta)
                     else:
                         lChavesEscolhidas.append(palavra_secreta)
-                        temposDeDemora.append(int(segundos))
-                        if len(temposDeDemora)!=0:
-                            demoras.append(int(segundos-temposDeDemora[-1]))
-                        break  # Sai do loop enquanto
 
-                # Aguarde para evitar requisições rápidas ao site
-                # time.sleep(frequencia)
-                iteracoes+=1
-                print(f'N ITERAÇÕES: {iteracoes}')
-                
-                print(f'TEMPO DECORRIDO NA CRIAÇÃO DAS CHAVES ATÉ AGORA: {segundos:.1f}')
-                # somaTempo+=segundos
-                # faltamNPalavras=self.nPalavras - len(self.lChavesEscolhidas)
-                # print (f'\n\nFALTAM {faltamNPalavras} CHUTES')
-                
-                
-                #     print (f'TEMPO POR CHAVE: {tempoPorChave} segundos')
-                #     print (f' TEMPO QUE FALTA: {faltamNPalavras*tempoPorChave}')
-                if len(temposDeDemora)!=0:
-                    print(f'TEMPOS DE DEMORA:{temposDeDemora}')
-                if len(demoras)!=0:
-                    print(f'DEMORAS: {demoras}')
-                    print(self.verde+f'MÉDIA DE DEMORAS: {int(sum(demoras)/(len(demoras)))}'+self.cinza)
-                print('\nCHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
-                print(self.amarelo+f'Quantas chaves já foram criadas:{len(lChavesEscolhidas)}'+self.cinza)
+                        # Adiciona o tempo atual em `temposDeDemora`
+                        temposDeDemora.append(segundos)
 
-                # print("ITERACOES:",iteracoes)
-                
-                # print("TEMPO:",f'{segundos:.1f} segundos')
-                # print(f"MÉDIA POR CILO: {somaTempo/iteracoes:.1f}")
-        # self.tempoPrasChaves=segundos
-        print(self.vermelho+f'FINAAAAAAAAAAAAAAAALLLLL:::'+self.cinza)
-        print(f'TEMPOS DE DEMORA:{temposDeDemora}')
-        print(self.verde+f'MÉDIA DE DEMORAS: {int(sum(demoras)/(len(demoras)))}'+self.cinza)
-        print('\nCHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
-        print(self.amarelo+f'Quantas chaves já foram criadas:{len(lChavesEscolhidas)}'+self.cinza)
+                        # Calcula a diferença de tempo entre o último e o penúltimo registro
+                        if len(temposDeDemora) > 1:
+                            diferenca = temposDeDemora[-1] - temposDeDemora[-2]
+                            demoras.append(diferenca)
 
-        print('CHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
-        print(self.amarelo+f'Quantas chaves foram criadas no total:{len(lChavesEscolhidas)}'+self.cinza)
+                        # Fim da iteração bem-sucedida
+                        fim_iteracao = datetime.now()
+                        tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
+                        temposDeIteracao.append(tempo_iteracao)
+
+                        self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
+
+                        break  # Sai do loop enquanto após salvar a chave
+
+                # Fim da iteração sem salvar a chave
+                fim_iteracao = datetime.now()
+                tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
+                temposDeIteracao.append(tempo_iteracao)
+
+                self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
+
         return lChavesEscolhidas
+
+    def print_status(self, temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas):
+        #PALAVRAS AMERICANAS
+        if palavrasAmericanas:
+            print("PALAVRAS AMERICANAS:", palavrasAmericanas)
+
+
+        # TEMPOS DE DEMORA 
+        print("TEMPOS DE DEMORA:", temposDeDemora)
+        
+        #CHAVES ESCOLHIDAS
+        print(self.amarelo + f"CHAVES ESCOLHIDAS : {', '.join(chaveEscolhida.upper() for chaveEscolhida in lChavesEscolhidas)}" + self.cinza)
+
+        # DEMORAS
+        print("DEMORAS:", demoras)
+        
+        # MÉDIA DE DEMORA
+        if demoras:
+            media_demora = sum(demoras) / len(demoras)
+        else:
+            media_demora = 0
+        print(f"MÉDIA DE DEMORA: {media_demora:.2f} segundos")
+        
+        # N ITERAÇÕES
+        print(f"N ITERAÇÕES: {iteracoes}")
+        
+        # DEMORA DAS ITERAÇÕES
+        print("DEMORA DAS ITERAÇÕES:", temposDeIteracao)
+        
+
+        # MÉDIA DE DEMORA DAS ITERAÇÕES
+        if temposDeIteracao:
+            media_iteracao = sum(temposDeIteracao) / len(temposDeIteracao)
+        else:
+            media_iteracao = 0
+        print(f"MÉDIA DE DEMORA DAS ITERAÇÕES: {media_iteracao:.2f} segundos")
+        
+        print("-" * 50)  # Separador para melhor visualização
+
+
 
     
     
@@ -295,11 +339,6 @@ if __name__ == "__main__":
 
 
 
-
-import requests
-import re
-from lxml import html  
-import csv,os,json
 
 
     

@@ -1,5 +1,4 @@
 from datetime import datetime
-import time
 import numpy as np
 from wordfreq import word_frequency, top_n_list
 from listaDePalavras2 import listaDePalavras2
@@ -15,7 +14,8 @@ import csv,os,json
 class Termoo():
     def __init__(self):
         # self.dicionarioTodo = todasAsPalavras
-        self.dicionarioTodo=top_n_list('pt', 30000000)
+        self.en = top_n_list('en', 100000, wordlist='large')
+        self.dicionarioTodo=top_n_list('pt', 300000)
         self.dicionarioTodo=listaDePalavras3
         self.vermelho = '\033[91m'
         self.cinza = "\033[37m"
@@ -55,40 +55,65 @@ class Termoo():
     
     def carrega_palavra_secreta(self):
         url = "http://www.palabrasaleatorias.com/palavras-aleatorias.php?fs=1"
-        # horario_inicio = datetime.now()
+        horario_inicio = datetime.now()
         lChavesEscolhidas = []
         iteracoes=0
         frequencia=0
+        temposDeDemora=[]
+        demoras=[]
         # somaTempo=0
         for iPalavra in range(self.nPalavras):
             while True:
                 resposta = requests.get(url)
                 elemento = html.fromstring(resposta.content)
                 palavra_secreta = elemento.xpath('//div[@style="font-size:3em; color:#6200C5;"]/text()')[0].strip()
-                
+                duracao = datetime.now() - horario_inicio
+                segundos = duracao.total_seconds()
                 # Se a palavra tiver o número correto de letras, adicione à lista
                 if len(palavra_secreta) == self.nLetras and not palavra_secreta in lChavesEscolhidas:
-                    lChavesEscolhidas.append(palavra_secreta)
-                    break  # Sai do loop enquanto
+                    if palavra_secreta in self.en:
+                        print(f'A PALAVRA {palavra_secreta} É AMERICANA')
+                    else:
+                        lChavesEscolhidas.append(palavra_secreta)
+                        temposDeDemora.append(int(segundos))
+                        if len(temposDeDemora)!=0:
+                            demoras.append(int(segundos-temposDeDemora[-1]))
+                        break  # Sai do loop enquanto
 
                 # Aguarde para evitar requisições rápidas ao site
                 # time.sleep(frequencia)
-                # iteracoes+=1
-                # duracao = datetime.now() - horario_inicio
-                # segundos = duracao.total_seconds()
+                iteracoes+=1
+                print(f'N ITERAÇÕES: {iteracoes}')
+                
+                print(f'TEMPO DECORRIDO NA CRIAÇÃO DAS CHAVES ATÉ AGORA: {segundos:.1f}')
                 # somaTempo+=segundos
                 # faltamNPalavras=self.nPalavras - len(self.lChavesEscolhidas)
                 # print (f'\n\nFALTAM {faltamNPalavras} CHUTES')
-                # if len(self.lChavesEscolhidas)!=0:
-                #     tempoPorChave=segundos/len(self.lChavesEscolhidas)
+                
+                
                 #     print (f'TEMPO POR CHAVE: {tempoPorChave} segundos')
                 #     print (f' TEMPO QUE FALTA: {faltamNPalavras*tempoPorChave}')
-                print('CHAVES ESCOLHIDAS',lChavesEscolhidas)
+                if len(temposDeDemora)!=0:
+                    print(f'TEMPOS DE DEMORA:{temposDeDemora}')
+                if len(demoras)!=0:
+                    print(f'DEMORAS: {demoras}')
+                    print(self.verde+f'MÉDIA DE DEMORAS: {int(sum(demoras)/(len(demoras)))}'+self.cinza)
+                print('\nCHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
+                print(self.amarelo+f'Quantas chaves já foram criadas:{len(lChavesEscolhidas)}'+self.cinza)
+
                 # print("ITERACOES:",iteracoes)
                 
                 # print("TEMPO:",f'{segundos:.1f} segundos')
                 # print(f"MÉDIA POR CILO: {somaTempo/iteracoes:.1f}")
         # self.tempoPrasChaves=segundos
+        print(self.vermelho+f'FINAAAAAAAAAAAAAAAALLLLL:::'+self.cinza)
+        print(f'TEMPOS DE DEMORA:{temposDeDemora}')
+        print(self.verde+f'MÉDIA DE DEMORAS: {int(sum(demoras)/(len(demoras)))}'+self.cinza)
+        print('\nCHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
+        print(self.amarelo+f'Quantas chaves já foram criadas:{len(lChavesEscolhidas)}'+self.cinza)
+
+        print('CHAVES ESCOLHIDAS AGORA',lChavesEscolhidas)
+        print(self.amarelo+f'Quantas chaves foram criadas no total:{len(lChavesEscolhidas)}'+self.cinza)
         return lChavesEscolhidas
 
     
@@ -133,7 +158,7 @@ class Termoo():
     def colunai(self, chave, iColuna):
         
         if chave in self.palavrasAcertadas:
-            str = self.verde + f"PALAVRA {iColuna + 1} - ACERTADA: {chave.upper()}\n" + self.cinza
+            str = self.verde + f"\nPALAVRA {iColuna + 1} - ACERTADA: {chave.upper()}\n" + self.cinza
             
             return str
     
@@ -177,7 +202,7 @@ class Termoo():
             
             # print(f'TEMPO PRA CONSEGUIR AS CHAVES {self.tempoPrasChaves:.2f}')
             # print(f'TEMPO PRA CADA CHAVE: {(self.tempoPrasChaves/self.nPalavras):.1f}')
-            chute = input("Digite um chute: ").lower()+"\n"
+            chute = input("\nDigite um chute: ").lower()
             
             if len(chute) != self.nLetras:
                 print(f"Por favor, digite uma palavra com {self.nLetras} letras.")
@@ -197,8 +222,10 @@ class Termoo():
                 if palavraEscolhida not in self.palavrasAcertadas:
                     palavrasSobrantes.append(palavraEscolhida)
             
+            print(self.vermelho+f"Vidas restantes: {self.nLinhasFaltantes}"+self.cinza) 
+            print(self.amarelo+ f"Palavras faltentes: {len(palavrasSobrantes)}"+self.cinza+"\n")
+
             print(self.amarelo + f"CHAVES ESCOLHIDAS : {', '.join(palavraSobrante.upper() for palavraSobrante in palavrasSobrantes)}" + self.cinza)
-            
             if len(self.palavrasAcertadasConfere)!=0:
                 print(self.verde + f"PALAVRAS ACERTADAS : {', '.join(palavraAcertada.upper() for palavraAcertada in self.palavrasAcertadasConfere)}" + self.cinza)
             
@@ -210,16 +237,16 @@ class Termoo():
             if len(lPalavrasErradas)!=0:
                 print(self.vermelho + f"PALAVRAS ERRADAS : {', '.join(palavrasErrada.upper() for palavrasErrada in lPalavrasErradas)}" + self.cinza)
             
-            print(self.vermelho+f"Vidas restantes: {self.nLinhasFaltantes}"+self.cinza) 
+            
             
             if chute in self.lChavesEscolhidas:
-                print(self.verde+f"Parabéns! Você acertou a palavra '{chute}'!".upper()+self.cinza)
+                print(self.verde+f"\nParabéns! Você acertou a palavra '{chute}'!".upper()+self.cinza)
                 self.palavrasAcertadasConfere.append(chute)
                 self.lChavesEscolhidas.remove(chute)
                 self.palavrasAcertadas.add(chute)
                 
                 if not self.lChavesEscolhidas:
-                    print("Você acertou todas as palavras! Parabéns!")
+                    print(self.verde+"\n\nVocê acertou todas as palavras! Parabéns!".upper())
                     break
                     
         if self.nLinhasFaltantes == 0:

@@ -82,7 +82,7 @@ class Termoo():
 
         for _ in range(self.nPalavras):
             sorteada=random.choice(lPreChavesEscolhidas)
-            while len(sorteada) != self.nLetras:
+            while len(sorteada) != self.nLetras or sorteada in lPreChavesEscolhidas:
                 sorteada=random.choice(lPreChavesEscolhidas)
 
             ChavesEscolhidas.append(sorteada)

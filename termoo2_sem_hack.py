@@ -1,10 +1,9 @@
 from datetime import datetime
 import numpy as np
 from wordfreq import word_frequency, top_n_list
-from listaDePalavras2 import listaDePalavras2
-from listaDePalavras3 import listaDePalavras3
+from listaDePalavrasFinal_01_12_24 import palavras
 import requests
-
+import random
 from datetime import datetime
 import requests
 from lxml import html
@@ -27,7 +26,7 @@ class Termoo():
         # self.dicionarioTodo = todasAsPalavras
         self.en = top_n_list('en', 100000, wordlist='large')
         self.dicionarioTodo=top_n_list('pt', 300000)
-        self.dicionarioTodo=listaDePalavras3
+        self.possiveisChaves=palavras
         self.vermelho = '\033[91m'
         self.cinza = "\033[37m"
         self.amarelo = "\033[33m"
@@ -67,139 +66,55 @@ class Termoo():
         return sem_acentos
 
     def chavesEscolhidas(self):
-        url = "http://www.palabrasaleatorias.com/palavras-aleatorias.php?fs=1"
-        horario_inicio = datetime.now()
-        lChavesEscolhidas = []
-        self.lChavesEscolhidasOriginais=[]
-        iteracoes = 0
-        temposDeDemora = []
-        temposDeIteracao = []
-        palavrasAmericanas=[]
-        demoras = []
+        """
+        Seleciona aleatoriamente um conjunto de palavras como chaves do jogo.
+        
+        Returns:
+            list: Lista de palavras selecionadas como chaves.
+        """
+        ChavesEscolhidas = []
+        lPreChavesEscolhidas = [word.lower() for word in self.possiveisChaves if ' ' not in word and '-' not in word]
+        
+        # Garante que a lista lPreChavesEscolhidas tenha palavras suficientes para seleção
+        if len(lPreChavesEscolhidas) < self.nPalavras:
+            print("Erro: Não há palavras suficientes para selecionar.")
+            return []
 
-        for iPalavra in range(self.nPalavras):
-            while True:
-                iteracoes += 1  # Incrementa o número de iterações
-                # Início da iteração
-                inicio_iteracao = datetime.now()
-                
-                try:
-                    resposta = requests.get(url)
-                    elemento = html.fromstring(resposta.content)
-                    palavra_secreta = elemento.xpath('//div[@style="font-size:3em; color:#6200C5;"]/text()')[0].strip()
-                except Exception as e:
-                    print(f'Erro ao obter a palavra secreta: {e}')
-                    fim_iteracao = datetime.now()
-                    tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
-                    temposDeIteracao.append(tempo_iteracao)
-                    self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
-                    continue  # Tenta novamente em caso de erro
+        for _ in range(self.nPalavras):
+            sorteada=random.choice(lPreChavesEscolhidas)
+            while len(sorteada) != self.nLetras:
+                sorteada=random.choice(lPreChavesEscolhidas)
 
-                duracao = datetime.now() - horario_inicio
-                segundos = duracao.total_seconds()
+            ChavesEscolhidas.append(sorteada)
 
-                # Verifica se a palavra é válida
-                if len(palavra_secreta) == self.nLetras and palavra_secreta not in lChavesEscolhidas:
-                    if palavra_secreta in self.en:
-                        print(f'A PALAVRA {palavra_secreta} É AMERICANA')
-                        palavrasAmericanas.append(palavra_secreta)
-                    else:
-                        lChavesEscolhidas.append(palavra_secreta)
-
-                        # Adiciona o tempo atual em `temposDeDemora`
-                        temposDeDemora.append(segundos)
-
-                        # Calcula a diferença de tempo entre o último e o penúltimo registro
-                        if len(temposDeDemora) > 1:
-                            diferenca = temposDeDemora[-1] - temposDeDemora[-2]
-                            demoras.append(diferenca)
-
-                        # Fim da iteração bem-sucedida
-                        fim_iteracao = datetime.now()
-                        tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
-                        temposDeIteracao.append(tempo_iteracao)
-
-                        self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
-
-                        break  # Sai do loop enquanto após salvar a chave
-
-                # Fim da iteração sem salvar a chave
-                fim_iteracao = datetime.now()
-                tempo_iteracao = (fim_iteracao - inicio_iteracao).total_seconds()
-                temposDeIteracao.append(tempo_iteracao)
-
-                self.print_status(temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas)
-
-            self.lChavesEscolhidasOriginais0=lChavesEscolhidas
-            lChavesEscolhidas=list(self.remover_acentos(palavra) for palavra in lChavesEscolhidas)
+        self.lChavesEscolhidasOriginais0 = ChavesEscolhidas
+        lChavesEscolhidas = [self.remover_acentos(palavra) for palavra in ChavesEscolhidas]
         return lChavesEscolhidas
 
-    def print_status(self, temposDeDemora, demoras, temposDeIteracao, iteracoes,lChavesEscolhidas,palavrasAmericanas):
-        #PALAVRAS AMERICANAS
-        if palavrasAmericanas:
-            print("PALAVRAS AMERICANAS:", palavrasAmericanas)
-
-
-        if self.flagVerDemora:
-                
-            # TEMPOS DE DEMORA 
-            print("TEMPOS DE DEMORA:", temposDeDemora)
-        
-        #CHAVES ESCOLHIDAS
-        if not self.flagDebuggar:
-            print(self.amarelo + f'NÚMERO DE PALAVRAS JÁ ESCOLHIDAS: {len(lChavesEscolhidas)}'+ self.cinza)
-        if self.flagDebuggar:
-            print(self.amarelo + f"CHAVES ESCOLHIDAS : {', '.join(chaveEscolhida.upper() for chaveEscolhida in lChavesEscolhidas)}" + self.cinza)
-
-        if self.flagVerDemora:
-            # DEMORAS
-            print("DEMORAS:", demoras)
-        
-            # MÉDIA DE DEMORA
-            if demoras:
-                media_demora = sum(demoras) / len(demoras)
-            else:
-                media_demora = 0
-            print(f"MÉDIA DE DEMORA: {media_demora:.2f} segundos")
-        
-        # N ITERAÇÕES
-        if self.flagVerIteracoes:
-            print(f"N ITERAÇÕES: {iteracoes}")
-        
-            # DEMORA DAS ITERAÇÕES
-            print("DEMORA DAS ITERAÇÕES:", temposDeIteracao)
-        
-
-            # MÉDIA DE DEMORA DAS ITERAÇÕES
-            if temposDeIteracao:
-                media_iteracao = sum(temposDeIteracao) / len(temposDeIteracao)
-            else:
-                media_iteracao = 0
-            print(f"MÉDIA DE DEMORA DAS ITERAÇÕES: {media_iteracao:.2f} segundos\n")
-        
-        print("-" * 50)  # Separador para melhor visualização
-
-
-
-    
-    
+  
     def listaDeCorDoChute(self, chute, chave):
+        if len(chute) != self.nLetras or len(chave) != self.nLetras:
+            print(f"Erro: A palavra deve ter exatamente {self.nLetras} letras.")
+            return [self.cinza] * self.nLetras, 0
+        
         listaDeCorDoChute = [self.cinza] * self.nLetras
         nVerdes = 0
         chuteVAmarelo = list(chave)
-        
+
         for i in range(self.nLetras):
             if chute[i] == chave[i]:
                 listaDeCorDoChute[i] = self.verde
                 nVerdes += 1
                 chuteVAmarelo[i] = None
-                
+
         for i in range(self.nLetras):
             if listaDeCorDoChute[i] == self.cinza and chute[i] in chuteVAmarelo:
                 listaDeCorDoChute[i] = self.amarelo
                 index_amarelo = chuteVAmarelo.index(chute[i])
                 chuteVAmarelo[index_amarelo] = None
+
         return listaDeCorDoChute, nVerdes
+
 
     def pintaPalavra(self, chute, listaDeCorDoChute):
         palavraPintada = ""
@@ -268,6 +183,9 @@ class Termoo():
             # print(f'TEMPO PRA CONSEGUIR AS CHAVES {self.tempoPrasChaves:.2f}')
             # print(f'TEMPO PRA CADA CHAVE: {(self.tempoPrasChaves/self.nPalavras):.1f}')
             chute = input("\nDigite um chute: ").lower()
+            if chute =="" or not chute:
+                print(self.vermelho+"FAÇA UM CHUTE!!!"+self.cinza)
+                continue
             if chute == 'desisto' or chute =='q' or chute == 'quit' or chute =='sair':
                 self.nLinhasFaltantes=0
                 continue
@@ -326,31 +244,28 @@ class Termoo():
                 print(self.vermelho + f"PALAVRAS ERRADAS : {', '.join(palavrasErrada.upper() for palavrasErrada in self.palavrasErradas)}" + self.cinza)
                     
         if self.nLinhasFaltantes == 0:
-            print(f"Suas vidas acabaram! As palavras eram: {', '.join(self.lChavesEscolhidasOriginais0)}")
+            print(f"Suas vidas acabaram! As palavras eram: {', '.join(self.lChavesEscolhidasOriginais0)}".upper())
 
     def fazChaves(self):
         escolherNChutes=input("Quer escolher quantos chutes quer? (s/N) (y/N)")
         if escolherNChutes=='s' or escolherNChutes=='y':
             self.nChutesTotais = int(input("Quantos chutes você quer? "))
-        debuggar= input("Quer debuggar? (s/N) (y/N)")
-        if debuggar =='s' or debuggar=='y':
-            self.flagDebuggar=True
+        preNLetras = input("Quantas letras você quer por palavra? (5)")
+        if preNLetras=='' or not preNLetras:
+            self.nLetras=5
         else:
-            self.flagDebuggar=False
-        verIteracoes = input("Quer ver iteracoes? (s/N) (y/N)")
-        if verIteracoes =='s' or verIteracoes=='y':
-            self.flagVerIteracoes=True
-        else:
-            self.flagVerIteracoes=False
-        verDemora= input("Ver demora? (s/N) (y/N)")
-        if verDemora =='s' or verDemora=='y':
-            self.flagVerDemora=True
-        else:
-            self.flagVerDemora=False
+            self.nLetras = int(preNLetras)
+        
+        preNPalavras= input("Quantas palavras? ")
 
-        self.nLetras = int(input("Quantas letras você quer por palavra? "))
-        self.nPalavras = int(input("Quantas palavras? "))
-        if not(escolherNChutes=='s' or escolherNChutes=='y'):
+        if preNPalavras=='' or not preNPalavras:
+            self.nPalavras=2
+        else:
+            self.nPalavras = int(preNPalavras)
+        
+
+
+        if not(preNPalavras=='s' or preNPalavras=='y'):
             self.nChutesTotais=self.nLetras+1
             self.nChutesTotais+=self.nPalavras-1
 

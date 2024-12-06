@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import unicodedata
+from datetime import datetime
 
 def normalizar(txt):
     """Remove acentos e transforma letras maiúsculas em minúsculas."""
@@ -42,8 +43,11 @@ def processar_palavras(arquivo_entrada, arquivo_saida):
     print(f'Arquivo "{arquivo_saida}" criado com sucesso!')
 
 # Caminho dos arquivos
+
 arquivo_entrada = '/home/borg/Desktop/codigoLazer/LISTA_DE_PALAVRAS/palavras_aleatorias.csv'  # Substitua pelo caminho correto
-arquivo_saida = '/home/borg/Desktop/codigoLazer/listaDePalavrasFinal_01_12_24.txt'
+current_time = datetime.now()
+formatted_time = current_time.strftime("%d_%m_%Y__%H_%M")
+arquivo_saida = f'/home/borg/Desktop/codigoLazer/listaDePalavrasFinal_{formatted_time}.txt'
 
 # Executa a função principal
 processar_palavras(arquivo_entrada, arquivo_saida)

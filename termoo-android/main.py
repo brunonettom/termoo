@@ -7,13 +7,10 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 from kivy.uix.popup import Popup
-from kivy.properties import ListProperty, NumericProperty
 from kivy.utils import get_color_from_hex
-from wordfreq import top_n_list
+from listaDePalavrasFinal_01_12_2024__22_28 import palavras  # Importa sua lista de palavras
 import random
 import unicodedata
-# Importando sua lista de palavras
-from listaDePalavrasFinal_01_12_2024__22_28 import palavras
 
 # Cores do jogo
 VERDE = get_color_from_hex('#32CD32')
@@ -23,9 +20,7 @@ BRANCO = get_color_from_hex('#FFFFFF')
 
 class TermooGame:
     def __init__(self):
-        # Usando tanto o wordfreq quanto sua lista personalizada
-        self.dicionario = top_n_list('pt', 300000)
-        self.palavras_possiveis = [p.lower() for p in palavras if ' ' not in p and '-' not in p]
+        self.palavras_possiveis = palavras  # Usa sua lista de palavras
         self.palavras_chutadas = []
         self.palavras_acertadas = set()
         
@@ -41,13 +36,13 @@ class TermooGame:
         resultado = ['cinza'] * len(chute)
         palavra_temp = list(palavra_chave)
         
-        # Verifica letras verdes
+        # Verifica verdes
         for i in range(len(chute)):
             if chute[i] == palavra_chave[i]:
                 resultado[i] = 'verde'
                 palavra_temp[i] = None
         
-        # Verifica letras amarelas
+        # Verifica amarelos
         for i in range(len(chute)):
             if resultado[i] == 'cinza' and chute[i] in palavra_temp:
                 resultado[i] = 'amarelo'
@@ -55,12 +50,18 @@ class TermooGame:
                 
         return resultado
 
-class TermooGrid(GridLayout):
-    def __init__(self, palavra_chave, **kwargs):
+class TermooLayout(BoxLayout):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cols = len(palavra_chave)
-        self.palavra_chave = palavra_chave
-        self.rows = 6  # Tentativas
+        self.orientation = 'vertical'
+        self.padding = 10
+        self.spacing = 10
+
+class LetterGrid(GridLayout):
+    def __init__(self, size, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = size
+        self.rows = 6
         self.spacing = 2
         self.cells = []
         
@@ -68,50 +69,30 @@ class TermooGrid(GridLayout):
             cell = Label(
                 text='',
                 background_color=CINZA,
-                canvas_color=CINZA,
                 size_hint=(1, 1)
             )
             self.cells.append(cell)
             self.add_widget(cell)
 
-class TermooTeclado(GridLayout):
-    def __init__(self, callback, **kwargs):
-        super().__init__(**kwargs)
-        self.callback = callback
-        self.cols = 10
-        self.rows = 3
-        self.criar_teclado()
-        
-    def criar_teclado(self):
-        letras = 'QWERTYUIOPASDFGHJKLZXCVBNM'
-        for letra in letras:
-            btn = Button(
-                text=letra,
-                on_press=self.callback,
-                background_normal='',
-                background_color=CINZA,
-                color=BRANCO
-            )
-            self.add_widget(btn)
-
 class TermooApp(App):
     def build(self):
         self.game = TermooGame()
-        self.n_letras = 5  # Padrão
-        self.palavra_chave = self.escolher_palavra()
-        self.tentativas_maximas = 6
+        self.n_letras = 5
+        self.palavra_atual = self.escolher_palavra()
+        self.tentativa_atual = 0
         
         # Layout principal
-        layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        layout = TermooLayout()
         
-        # Informações do jogo
-        info_layout = BoxLayout(size_hint_y=0.1)
-        self.info_label = Label(text=f'Tentativas: 0/{self.tentativas_maximas}')
-        info_layout.add_widget(self.info_label)
-        layout.add_widget(info_layout)
+        # Título
+        layout.add_widget(Label(
+            text='TERMOO',
+            size_hint_y=None,
+            height=50
+        ))
         
         # Grid do jogo
-        self.grid = TermooGrid(self.palavra_chave)
+        self.grid = LetterGrid(self.n_letras)
         layout.add_widget(self.grid)
         
         # Campo de entrada
@@ -123,50 +104,59 @@ class TermooApp(App):
         )
         layout.add_widget(self.entrada)
         
-        # Teclado
-        self.teclado = TermooTeclado(self.press_key)
-        layout.add_widget(self.teclado)
+        # Teclado virtual
+        self.criar_teclado(layout)
         
         return layout
     
+    def criar_teclado(self, layout):
+        teclado = GridLayout(
+            cols=10,
+            spacing=2,
+            size_hint_y=None,
+            height=200
+        )
+        
+        letras = 'QWERTYUIOPASDFGHJKLZXCVBNM'
+        for letra in letras:
+            btn = Button(
+                text=letra,
+                on_press=self.press_key,
+                background_normal='',
+                background_color=CINZA
+            )
+            teclado.add_widget(btn)
+            
+        layout.add_widget(teclado)
+    
     def escolher_palavra(self):
-        # Escolhe palavras da sua lista personalizada
         palavras_validas = [p for p in self.game.palavras_possiveis if len(p) == self.n_letras]
         palavra = random.choice(palavras_validas)
         return self.game.remover_acentos(palavra.lower())
     
     def press_key(self, instance):
-        if len(self.entrada.text) < self.n_letras:
-            self.entrada.text += instance.text.lower()
+        self.entrada.text += instance.text.lower()
     
     def verificar_palavra(self, instance):
         chute = self.entrada.text.lower()
+        
         if len(chute) != self.n_letras:
-            self.mostrar_erro(f"A palavra deve ter {self.n_letras} letras!")
+            self.mostrar_erro(f"Use {self.n_letras} letras!")
             return
-        
-        # Verifica se a palavra está no dicionário do wordfreq ou na sua lista
-        if chute not in self.game.dicionario and chute not in self.game.palavras_possiveis:
-            self.mostrar_erro("Palavra não encontrada no dicionário!")
-            return
-        
-        resultado = self.game.verifica_palavra(chute, self.palavra_chave)
+            
+        resultado = self.game.verifica_palavra(chute, self.palavra_atual)
         self.atualizar_grid(chute, resultado)
         self.entrada.text = ''
-        
-        # Atualiza contador de tentativas
-        tentativas = len(self.game.palavras_chutadas)
-        self.info_label.text = f'Tentativas: {tentativas}/{self.tentativas_maximas}'
+        self.tentativa_atual += 1
         
         if all(r == 'verde' for r in resultado):
             self.mostrar_vitoria()
-        elif tentativas >= self.tentativas_maximas:
+        elif self.tentativa_atual >= 6:
             self.mostrar_derrota()
     
     def atualizar_grid(self, chute, resultado):
-        linha_atual = len(self.game.palavras_chutadas)
         for i, (letra, cor) in enumerate(zip(chute, resultado)):
-            cell = self.grid.cells[linha_atual * self.n_letras + i]
+            cell = self.grid.cells[self.tentativa_atual * self.n_letras + i]
             cell.text = letra.upper()
             if cor == 'verde':
                 cell.background_color = VERDE
@@ -174,8 +164,6 @@ class TermooApp(App):
                 cell.background_color = AMARELO
             else:
                 cell.background_color = CINZA
-        
-        self.game.palavras_chutadas.append(chute)
     
     def mostrar_erro(self, mensagem):
         popup = Popup(
@@ -189,7 +177,7 @@ class TermooApp(App):
     def mostrar_vitoria(self):
         popup = Popup(
             title='Parabéns!',
-            content=Label(text=f'Você acertou a palavra: {self.palavra_chave.upper()}!'),
+            content=Label(text='Você acertou!'),
             size_hint=(None, None),
             size=(300, 200)
         )
@@ -198,7 +186,7 @@ class TermooApp(App):
     def mostrar_derrota(self):
         popup = Popup(
             title='Fim de Jogo',
-            content=Label(text=f'A palavra era: {self.palavra_chave.upper()}'),
+            content=Label(text=f'A palavra era: {self.palavra_atual.upper()}'),
             size_hint=(None, None),
             size=(300, 200)
         )

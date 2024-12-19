@@ -94,6 +94,50 @@ class Velha():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#     o| |
+#      |x|
+#      | |x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     Jogo=Velha()
     Jogo.main()

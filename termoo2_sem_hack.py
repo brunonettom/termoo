@@ -1,7 +1,7 @@
 from datetime import datetime
 import numpy as np
 from wordfreq import word_frequency, top_n_list
-from listaDePalavrasFinal_01_12_24 import palavras
+from listaDePalavrasFinal_01_12_2024__22_28 import palavras
 import requests
 import random
 from datetime import datetime
